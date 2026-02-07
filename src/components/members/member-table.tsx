@@ -7,17 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MemberDialog } from "./member-dialog";
-import { Pagination, 
-        PaginationContent, 
-        PaginationItem, 
-        PaginationNext, 
-        PaginationPrevious,
-        PaginationLink,
-        PaginationEllipsis
-    } from "@/components/ui/pagination";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationNext,
+    PaginationPrevious,
+    PaginationLink,
+    PaginationEllipsis
+} from "@/components/ui/pagination";
 import { calculateAge } from "@/lib/utils"
 import { alertService } from '@/lib/alerts';
-import { Search, Edit3, Trash2, UserPlus, MoreHorizontal } from "lucide-react";
+import { Search, Edit3, Trash2 } from "lucide-react";
 
 
 export default function MemberTable() {
@@ -36,15 +37,15 @@ export default function MemberTable() {
         try {
             setLoading(true);
             const res = await memberService.getMembers(page, 10, search);
+
             setMembers(res.data);
-            setTotalPages(Math.ceil(res.total / res.pageSize));
+            setTotalPages(res.totalPages); // ใช้ค่าจาก API โดยตรงไม่ต้องคำนวณเองแล้ว
         } catch (error) {
-            console.error("Failed to fetch members:", error);
-            // เพิ่มการแจ้งเตือน Error ตรงนี้ได้
+            console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [page, search]); // ฟังก์ชันจะเปลี่ยนก็ต่อเมื่อ page หรือ search เปลี่ยน
+    }, [page, search]);
 
     useEffect(() => {
         fetchMembers();
@@ -54,21 +55,24 @@ export default function MemberTable() {
     const handleSubmit = async (values: MemberFormValues) => {
         try {
             if (selectedMember) {
-                await memberService.updateMember(selectedMember.id, values);
-                alertService.notify("อัปเดตข้อมูลสำเร็จ"); // แจ้งเตือนมุมจอ
+                // โหมดแก้ไข: ต้องเอา ID จาก selectedMember มาใช้
+                // และส่งข้อมูลที่เหลือจาก values ไป
+                await memberService.updateMember(values);
+                alertService.notify("อัปเดตข้อมูลสำเร็จ");
             } else {
+                // โหมดเพิ่มใหม่: ส่ง values ไปสร้างสมาชิกใหม่
                 await memberService.createMember(values);
-                alertService.success("สร้างสมาชิกสำเร็จ", "ข้อมูลถูกเพิ่มลงในระบบเรียบร้อยแล้ว"); // Pop-up กลางจอ
+                alertService.success("สร้างสมาชิกสำเร็จ", "ข้อมูลถูกเพิ่มลงในระบบเรียบร้อยแล้ว");
             }
             setIsDialogOpen(false);
-            fetchMembers();
+            fetchMembers(); // โหลดข้อมูลใหม่
         } catch (error) {
             alertService.error("เกิดข้อผิดพลาด", `${error}`);
         }
     };
 
     // Handle Delete
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id?: string) => {
         const result = await alertService.confirmDelete(
             "คุณแน่ใจหรือไม่?",
             "หากลบแล้วจะไม่สามารถกู้คืนข้อมูลสมาชิกคนนี้ได้!"
@@ -76,7 +80,7 @@ export default function MemberTable() {
 
         if (result.isConfirmed) {
             try {
-                await memberService.deleteMember(id);
+                await memberService.deleteMember(id ?? "");
                 alertService.notify("ลบสมาชิกเรียบร้อยแล้ว");
                 fetchMembers();
             } catch (error) {
@@ -129,8 +133,10 @@ export default function MemberTable() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>ID</TableHead>
                             <TableHead>ชื่อ-นามสกุล</TableHead>
                             <TableHead>อีเมล</TableHead>
+                            <TableHead>หมายเลขโทรศัพท์</TableHead>
                             <TableHead>ตำแหน่ง</TableHead>
                             <TableHead>อายุ</TableHead>
                             <TableHead>สถานะ</TableHead>
@@ -143,16 +149,18 @@ export default function MemberTable() {
                         ) : members.length === 0 ? (
                             <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">ไม่พบข้อมูลสมาชิก</TableCell></TableRow>
                         ) : members.map((member) => (
-                            <TableRow key={member.id}>
-                                <TableCell className="font-medium">{member.name}</TableCell>
+                            <TableRow key={member.memberId}>
+                                <TableCell className="font-medium">{member.memberId}</TableCell>
+                                <TableCell className="font-medium">{member.fullName}</TableCell>
                                 <TableCell>{member.email}</TableCell>
+                                <TableCell className="font-medium">{member.phone}</TableCell>
                                 <TableCell className="capitalize">
                                     <Badge variant="outline">
-                                        {member.role}
+                                        {member.position}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    {member.birthday ? `${calculateAge(member.birthday)} ปี` : "-"}
+                                    {member.birthday ? `${calculateAge(member.birthdayStr)} ปี` : "-"}
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
@@ -178,7 +186,7 @@ export default function MemberTable() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                                        onClick={() => handleDelete(member.id)}
+                                        onClick={() => handleDelete(member.memberId)}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -195,10 +203,10 @@ export default function MemberTable() {
                 {loading ? (
                     <p className="text-center py-10">กำลังโหลด...</p>
                 ) : members.map((member) => (
-                    <div key={member.id} className="p-4 bg-white border rounded-lg shadow-sm space-y-3">
+                    <div key={member.memberId} className="p-4 bg-white border rounded-lg shadow-sm space-y-3">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="font-bold text-lg">{member.name}</p>
+                                <p className="font-bold text-lg">{member.fullName}</p>
                                 <p className="text-sm text-muted-foreground">{member.email}</p>
                             </div>
                             <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
@@ -210,11 +218,11 @@ export default function MemberTable() {
                             <div>
                                 <span className="text-muted-foreground">ตำแหน่ง:</span>
                                 <Badge variant="outline">
-                                    {member.role}
+                                    {member.position}
                                 </Badge>
                             </div>
                             <div>
-                                <span className="text-muted-foreground">อายุ:</span> {member.birthday ? `${calculateAge(member.birthday)} ปี` : "-"}
+                                <span className="text-muted-foreground">อายุ:</span> {member.birthday ? `${calculateAge(member.birthdayStr)} ปี` : "-"}
                             </div>
                         </div>
 
@@ -238,7 +246,7 @@ export default function MemberTable() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-9 w-9 text-slate-400 text-red-600 bg-red-50 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                                onClick={() => handleDelete(member.id)}
+                                onClick={() => handleDelete(member.memberId)}
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
