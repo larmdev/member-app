@@ -21,6 +21,8 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+COPY --from=builder /app/.env* ./ 
+
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
