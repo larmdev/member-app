@@ -12,6 +12,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# ดึงค่าจาก .env (ถ้ามีในเครื่อง) หรือรับจาก Docker Build Args
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # ปิดการส่ง Telemetry ของ Next.js เพื่อความเร็วและความเป็นส่วนตัว
 ENV NEXT_TELEMETRY_DISABLED 1
 
