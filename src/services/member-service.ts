@@ -13,7 +13,7 @@ export const memberService = {
             search: search
         });
 
-        const response = await fetch(`${BASE_URL}/members?${params}`, {
+        const response = await fetch(`${BASE_URL}/api/members?${params}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -33,7 +33,7 @@ export const memberService = {
     // POST: รับข้อมูลจากฟอร์ม (ไม่มี ID)
     createMember: async (data: MemberFormValues) => {
         data.memberId = null;
-        const response = await fetch(`${BASE_URL}/members`, {
+        const response = await fetch(`${BASE_URL}/api/members`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -43,7 +43,7 @@ export const memberService = {
 
     // PUT: รับ ID แยกกับข้อมูลที่ต้องการอัปเดต
     updateMember: async (data: MemberFormValues) => {
-        const response = await fetch(`${BASE_URL}/members`, {
+        const response = await fetch(`${BASE_URL}/api/members`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -53,7 +53,7 @@ export const memberService = {
 
     // DELETE /members/:id
     deleteMember: async (id: string) => {
-        const response = await fetch(`${BASE_URL}/members/${id}`, {
+        const response = await fetch(`${BASE_URL}/api/members/${id}`, {
             method: 'DELETE',
         });
 
