@@ -1,0 +1,26 @@
+import * as z from "zod"
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member' | 'guest';
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
+export interface MemberResponse {
+  data: Member[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export const memberSchema = z.object({
+  name: z.string().min(2, "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร"),
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+  role: z.enum(["admin", "member", "guest"]),
+  status: z.enum(["active", "inactive"]),
+})
+
+export type MemberFormValues = z.infer<typeof memberSchema>
