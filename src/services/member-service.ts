@@ -5,6 +5,7 @@ let mockMembers: Member[] = Array.from({ length: 50 }, (_, i) => ({
     id: `mem-${i + 1}`,
     name: `User ${i + 1}`,
     email: `user${i + 1}@example.com`,
+    birthday: `20/${i % 5}/199${i%5}`, // เพิ่มข้อมูลตัวอย่าง
     role: i % 3 === 0 ? 'admin' : 'member',
     status: i % 5 === 0 ? 'inactive' : 'active',
     createdAt: new Date().toISOString(),

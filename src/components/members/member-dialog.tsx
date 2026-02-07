@@ -8,6 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { calculateAge } from "@/lib/utils"
+import { Badge } from "../ui/badge"
 
 interface MemberDialogProps {
     open: boolean
@@ -19,8 +21,13 @@ interface MemberDialogProps {
 export function MemberDialog({ open, onOpenChange, onSubmit, initialData }: MemberDialogProps) {
     const form = useForm<MemberFormValues>({
         resolver: zodResolver(memberSchema),
-        defaultValues: { name: "", email: "", role: "member", status: "active" },
+        defaultValues: { name: "", email: "", role: "member", status: "active", birthday: "" },
     })
+
+    // ดึงค่ามาเฝ้าดู (Watch)
+    const birthdayValue = form.watch("birthday") || "";
+    // คำนวณอายุ: ถ้าพิมพ์ครบ 10 หลัก (DD/MM/YYYY) ค่อยคำนวณ ถ้าไม่ครบให้เป็น null
+    const displayAge = birthdayValue.length === 10 ? calculateAge(birthdayValue) : null;
 
     // เมื่อเลือก Member เพื่อแก้ไข ให้โหลดข้อมูลลงฟอร์ม
     useEffect(() => {
@@ -29,10 +36,11 @@ export function MemberDialog({ open, onOpenChange, onSubmit, initialData }: Memb
                 name: initialData.name,
                 email: initialData.email,
                 role: initialData.role,
+                birthday: initialData.birthday,
                 status: initialData.status,
             })
         } else {
-            form.reset({ name: "", email: "", role: "member", status: "active" })
+            form.reset({ name: "", email: "", role: "member", status: "active", birthday: "" })
         }
     }, [initialData, form, open])
 
@@ -62,6 +70,37 @@ export function MemberDialog({ open, onOpenChange, onSubmit, initialData }: Memb
                                 <FormItem>
                                     <FormLabel>อีเมล</FormLabel>
                                     <FormControl><Input placeholder="john@example.com" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="birthday"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <div className="flex justify-between items-center">
+                                        <FormLabel>วันเกิด (วว/ดด/ปปปป)</FormLabel>
+                                        {displayAge !== null && (
+                                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                อายุ {displayAge} ปี
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="20/05/1999"
+                                            {...field}
+                                            maxLength={10}
+                                            onChange={(e) => {
+                                                // Logic เล็กๆ เพื่อช่วยใส่ "/" ให้อัตโนมัติ
+                                                let v = e.target.value.replace(/\D/g, "");
+                                                if (v.length > 2 && v.length <= 4) v = `${v.slice(0, 2)}/${v.slice(2)}`;
+                                                else if (v.length > 4) v = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
+                                                field.onChange(v);
+                                            }}
+                                        />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
